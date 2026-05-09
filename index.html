@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>날짜별 인원 교육장 통보 생성기</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;background:#0f0e1a;color:#e8e6ff;min-height:100vh;}
+.app{display:grid;grid-template-columns:1fr 1fr;min-height:100vh;}
+.L{padding:20px 16px;background:#1a1830;border-right:1px solid #3730a3;overflow-y:auto;max-height:100vh;}
+.hdr{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #2f2c52;}
+.hico{width:40px;height:40px;background:#3730a3;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.hdr h1{font-size:15px;font-weight:700;}.hdr p{font-size:11px;color:#9490c4;margin-top:2px;}
+.stitle{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#818cf8;margin:14px 0 8px;display:flex;align-items:center;gap:8px;}
+.stitle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,#3730a3,transparent);}
+.card{background:#252340;border:1px solid #2f2c52;border-radius:10px;padding:14px;margin-bottom:12px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.f1{grid-template-columns:1fr!important;}
+.flabel{display:block;font-size:11px;color:#9490c4;font-weight:600;letter-spacing:.5px;margin-bottom:5px;}
+.finput{width:100%;background:#2f2c52;border:1px solid #3d3a6e;border-radius:7px;padding:8px 11px;color:#e8e6ff;font-family:inherit;font-size:13px;outline:none;transition:border .2s;display:block;}
+.finput:focus{border-color:#4f46e5;}
+input[type=number].finput{text-align:center;padding:8px 4px;}
+.stepper{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.sb{width:32px;height:32px;border-radius:7px;border:1px solid #3730a3;background:#2f2c52;color:#e8e6ff;font-size:20px;line-height:1;cursor:pointer;transition:background .15s;font-family:inherit;flex-shrink:0;}
+.sb:hover{background:#4f46e5;}
+.sv{font-size:20px;font-weight:700;color:#f59e0b;min-width:26px;text-align:center;}
+.sl{font-size:12px;color:#9490c4;}
+.hall-item{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;background:#2f2c52;border-radius:7px;padding:9px 10px;margin-bottom:7px;border-left:3px solid;}
+.hdot{width:10px;height:10px;border-radius:50%;display:block;}
+.hni{background:transparent;border:none;color:#e8e6ff;font-family:inherit;font-size:13px;font-weight:500;outline:none;width:100%;}
+.hbadge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;}
+.dtabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;}
+.dtab{padding:6px 13px;border-radius:7px;border:1px solid #2f2c52;background:#2f2c52;color:#9490c4;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;}
+.dtab.on{background:#4f46e5;border-color:#4f46e5;color:#fff;}
+.dtab:hover:not(.on){border-color:#4f46e5;color:#e8e6ff;}
+.dpanel{display:none;}.dpanel.on{display:block;}
+.totbar{display:flex;align-items:center;justify-content:space-between;background:#1e1b4b;border:1px solid #4f46e5;border-radius:8px;padding:9px 13px;margin-top:10px;}
+.tlbl{font-size:12px;color:#9490c4;font-weight:600;}
+.tval{font-size:22px;font-weight:900;color:#f59e0b;}
+.tunit{font-size:12px;color:#9490c4;}
+
+/* ── 강의장 블록 ── */
+.hall-block{background:#1e1b3a;border:1px solid #2f2c52;border-radius:9px;margin-bottom:10px;overflow:hidden;}
+.hall-block-header{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#252350;border-bottom:1px solid #2f2c52;}
+.hall-block-name{font-size:13px;font-weight:700;color:#c7d2fe;flex:1;}
+.hall-block-tot{font-size:12px;font-weight:700;color:#f59e0b;}
+.hall-block-body{padding:10px 12px;}
+
+/* 부 구분 */
+.shift-section{margin-bottom:8px;}
+.shift-label{font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:5px;display:inline-block;margin-bottom:6px;}
+.shift-label.s1{background:#1e3a8a;color:#93c5fd;}
+.shift-label.s2{background:#14532d;color:#86efac;}
+
+/* 과 행: [과번호 버튼] [인원 입력] */
+.ka-row{display:grid;grid-template-columns:auto 1fr;gap:6px;align-items:center;margin-bottom:5px;}
+.ka-btns{display:flex;gap:4px;flex-wrap:wrap;}
+.ka-btn{padding:4px 9px;border-radius:6px;border:1px solid #3d3a6e;background:#2f2c52;color:#9490c4;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;}
+.ka-btn.on{background:#4f46e5;border-color:#4f46e5;color:#fff;}
+.ka-btn.on.s2{background:#059669;border-color:#059669;}
+.ka-inp{background:#2f2c52;border:1px solid #3d3a6e;border-radius:6px;padding:6px 8px;color:#e8e6ff;font-family:inherit;font-size:13px;outline:none;text-align:center;width:100%;transition:border .2s;}
+.ka-inp:focus{border-color:#4f46e5;}
+.ka-inp.s2:focus{border-color:#059669;}
+.ka-inp.s1b{border-color:#4338ca44;}
+.ka-inp.s2b{border-color:#05966944;}
+.ka-placeholder{font-size:12px;color:#5c5890;padding:4px 0;}
+
+/* 담당자 */
+.srow{display:grid;grid-template-columns:1fr 1fr 70px auto;gap:7px;align-items:center;margin-bottom:7px;}
+.rmbtn{width:28px;height:28px;border-radius:6px;border:1px solid #7f1d1d;background:#2d1515;color:#f87171;cursor:pointer;font-size:13px;font-family:inherit;}
+.rmbtn:hover{background:#450a0a;}
+.addbtn{width:100%;padding:9px;border-radius:7px;border:1px dashed #3730a3;background:transparent;color:#9490c4;font-size:12px;font-family:inherit;cursor:pointer;margin-top:5px;transition:all .15s;display:block;}
+.addbtn:hover{border-color:#4f46e5;color:#818cf8;}
+.genbtn{width:100%;padding:14px;border-radius:10px;border:none;background:#3730a3;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .2s;display:block;}
+.genbtn:hover{background:#4f46e5;}
+
+/* RIGHT */
+.R{background:#12111e;display:flex;flex-direction:column;max-height:100vh;}
+.rtbar{padding:13px 18px;border-bottom:1px solid #2f2c52;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.rtitle{font-size:11px;font-weight:700;color:#9490c4;letter-spacing:1px;}
+.ract{display:flex;gap:7px;}
+.tbtn{padding:7px 13px;border-radius:7px;border:1px solid #2f2c52;background:#1a1830;color:#9490c4;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;transition:all .15s;}
+.tbtn:hover{background:#2f2c52;color:#e8e6ff;}
+.tbtn.bl{background:#3730a3;border-color:#4f46e5;color:#fff;}
+.tbtn.bl:hover{background:#4f46e5;}
+.vtabs{display:flex;border-bottom:1px solid #2f2c52;flex-shrink:0;}
+.vtab{padding:9px 18px;font-size:12px;font-weight:600;color:#5c5890;cursor:pointer;font-family:inherit;border:none;border-bottom:2px solid transparent;background:transparent;transition:all .15s;}
+.vtab.on{color:#818cf8;border-bottom-color:#4f46e5;}
+.rcont{flex:1;overflow-y:auto;padding:18px;}
+.prev-wrap{background:#f3f4f6;border-radius:10px;overflow:hidden;}
+.codebox{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#a5b4fc;background:#252340;border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-all;line-height:1.7;}
+.empty{text-align:center;padding:70px 30px;color:#5c5890;font-size:14px;line-height:2;}
+.emico{font-size:50px;margin-bottom:14px;}
+.toast{position:fixed;bottom:20px;right:20px;background:#059669;color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transform:translateY(10px);transition:all .3s;z-index:9999;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+@media(max-width:800px){.app{grid-template-columns:1fr;}.L{max-height:none;}.R{max-height:80vh;}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="L">
+  <div class="hdr"><div class="hico">&#128226;</div><div><h1>날짜별 인원 교육장 통보</h1><p>입력 후 우측에서 HTML 메일 미리보기</p></div></div>
+
+  <div class="stitle">기본 정보</div>
+  <div class="card">
+    <div class="fr">
+      <div><span class="flabel">공사부서</span><input type="text" id="f_dept" class="finput" value="LNG 공사부"></div>
+      <div><span class="flabel">통보일</span><input type="date" id="f_ndate" class="finput"></div>
+    </div>
+    <div class="fr f1" style="margin-bottom:10px"><div><span class="flabel">교육 제목</span><input type="text" id="f_title" class="finput" value="자체교육 편성건"></div></div>
+    <div class="fr">
+      <div><span class="flabel">교육 시작일</span><input type="date" id="f_start" class="finput"></div>
+      <div><span class="flabel">교육 종료일</span><input type="date" id="f_end" class="finput"></div>
+    </div>
+    <div class="fr f1" style="margin-bottom:0"><div><span class="flabel">안내 메모 (선택)</span><input type="text" id="f_notice" class="finput" value="교육 시작 전 해당 교육장에 10분 전 도착해 주시기 바랍니다."></div></div>
+  </div>
+
+  <div class="stitle">강의장 설정</div>
+  <div class="card">
+    <div class="stepper">
+      <button class="sb" id="hMinus">&#8722;</button><span class="sv" id="hcnt">3</span><span class="sl">개 강의장 (최대 5개)</span><button class="sb" id="hPlus">&#43;</button>
+    </div>
+    <div id="hallList"></div>
+  </div>
+
+  <div class="stitle">교육 일자 설정</div>
+  <div class="card">
+    <div class="stepper">
+      <button class="sb" id="dMinus">&#8722;</button><span class="sv" id="dcnt">4</span><span class="sl">일 (최대 5일)</span><button class="sb" id="dPlus">&#43;</button>
+    </div>
+    <div class="dtabs" id="dtabs"></div>
+    <div id="dpanels"></div>
+  </div>
+
+  <div class="stitle">과별 담당자</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 70px auto;gap:7px;margin-bottom:6px;">
+      <span class="flabel" style="margin:0">부서</span><span class="flabel" style="margin:0">담당자</span><span class="flabel" style="margin:0">직책</span><span></span>
+    </div>
+    <div id="staffList"></div>
+    <button class="addbtn" id="addStaffBtn">&#65291; 담당자 추가</button>
+  </div>
+  <button class="genbtn" id="genBtn">&#128276; 통보문 생성하기</button>
+</div>
+
+<div class="R">
+  <div class="rtbar">
+    <span class="rtitle">&#128231; 이메일 미리보기</span>
+    <div class="ract">
+      <button class="tbtn" id="cpBtn">&#128203; HTML 복사</button>
+      <button class="tbtn bl" id="dlBtn">&#8681; 다운로드</button>
+    </div>
+  </div>
+  <div class="vtabs">
+    <button class="vtab on" id="vt_preview">미리보기</button>
+    <button class="vtab" id="vt_code">HTML 코드</button>
+  </div>
+  <div class="rcont" id="rcont">
+    <div class="empty"><div class="emico">&#128203;</div>왼쪽에서 정보를 입력 후<br><strong>통보문 생성하기</strong>를 클릭하세요.</div>
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+var HCOLS=['#818cf8','#34d399','#fbbf24','#f87171','#c084fc'];
+var HECS =['#4338ca','#059669','#d97706','#dc2626','#7c3aed'];
+var HDEF =['LNG관 3층 교육장','외업 2관 3층 교육장','LNG 2층 A교육장','LNG 2층 ㅊ교육장'];
+var WD   =['일','월','화','수','목','금','토'];
+var MAX_KA=5; // 최대 과 수
+var HC=3,DC=4,aD=0,gHTML='',cvtab='preview';
+
+document.addEventListener('DOMContentLoaded',function(){
+  var today=new Date();
+  gi('f_ndate').value=fd(today);
+  var s=new Date(today);s.setDate(s.getDate()+5);gi('f_start').value=fd(s);
+  var e=new Date(s);e.setDate(e.getDate()+4);gi('f_end').value=fd(e);
+  renderH();renderD();
+  addStaff('1과','서정민','프로');
+  addStaff('2과','김균호','프로');
+  gi('hMinus').addEventListener('click',function(){chH(-1);});
+  gi('hPlus').addEventListener('click',function(){chH(1);});
+  gi('dMinus').addEventListener('click',function(){chD(-1);});
+  gi('dPlus').addEventListener('click',function(){chD(1);});
+  gi('addStaffBtn').addEventListener('click',function(){addStaff('','','프로');});
+  gi('genBtn').addEventListener('click',gen);
+  gi('cpBtn').addEventListener('click',cpHTML);
+  gi('dlBtn').addEventListener('click',dlHTML);
+  gi('vt_preview').addEventListener('click',function(){sVtab('preview',this);});
+  gi('vt_code').addEventListener('click',function(){sVtab('code',this);});
+});
+
+function gi(id){return document.getElementById(id);}
+function fd(d){return d.toISOString().split('T')[0];}
+function xss(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function iv(id){return parseInt((gi(id)||{value:''}).value)||0;}
+
+/* ──────────── 강의장 ──────────── */
+function chH(d){var n=HC+d;if(n<1||n>5)return;HC=n;gi('hcnt').textContent=HC;renderH();rebuildDateHalls();}
+
+function getHallName(i){
+  var el=gi('hn_'+i);
+  return(el&&el.value.trim())||HDEF[i]||'강의장'+(i+1);
+}
+
+function renderH(){
+  var el=gi('hallList');el.innerHTML='';
+  for(var i=0;i<HC;i++){
+    var prev=getHallName(i);
+    var div=document.createElement('div');
+    div.className='hall-item';div.style.borderLeftColor=HCOLS[i];
+    div.innerHTML='<span class="hdot" style="background:'+HCOLS[i]+'"></span>'+
+      '<input class="hni" id="hn_'+i+'" type="text" value="'+xss(prev)+'" placeholder="강의장 이름">'+
+      '<span class="hbadge" style="background:'+HCOLS[i]+'22;color:'+HCOLS[i]+'">강의장 '+(i+1)+'</span>';
+    el.appendChild(div);
+    (function(idx){
+      var inp=gi('hn_'+idx);
+      if(inp)inp.addEventListener('input',function(){syncHallNames();});
+    })(i);
+  }
+}
+
+function syncHallNames(){
+  for(var d=0;d<DC;d++){
+    for(var h=0;h<HC;h++){
+      var el=gi('hlbl_'+d+'_'+h);
+      if(el)el.textContent=getHallName(h);
+    }
+  }
+}
+
+/* ──────────── 일자 탭 ──────────── */
+function chD(d){var n=DC+d;if(n<1||n>5)return;DC=n;if(aD>=DC)aD=DC-1;gi('dcnt').textContent=DC;renderD();}
+
+/*
+  State per cell: {s1:{ka:[bool*5], pp:[num*5]}, s2:{ka:[bool*5], pp:[num*5]}}
+  ka = 과 선택 여부 (1과~5과)
+  pp = 해당 과의 인원
+*/
+function saveState(){
+  var s={dates:[],cells:[]};
+  for(var d=0;d<5;d++){
+    s.dates[d]=gi('di_'+d)?gi('di_'+d).value:'';
+    s.cells[d]=[];
+    for(var h=0;h<5;h++){
+      var cell={s1:{ka:[],pp:[]},s2:{ka:[],pp:[]}};
+      for(var k=1;k<=MAX_KA;k++){
+        cell.s1.ka.push(!!(gi('s1ka_'+d+'_'+h+'_'+k)&&gi('s1ka_'+d+'_'+h+'_'+k).classList.contains('on')));
+        cell.s1.pp.push(iv('s1pp_'+d+'_'+h+'_'+k));
+        cell.s2.ka.push(!!(gi('s2ka_'+d+'_'+h+'_'+k)&&gi('s2ka_'+d+'_'+h+'_'+k).classList.contains('on')));
+        cell.s2.pp.push(iv('s2pp_'+d+'_'+h+'_'+k));
+      }
+      s.cells[d][h]=cell;
+    }
+  }
+  return s;
+}
+
+function renderD(){
+  var sv=saveState();
+  gi('dtabs').innerHTML='';gi('dpanels').innerHTML='';
+  for(var d=0;d<DC;d++){
+    // tab
+    var t=document.createElement('button');
+    t.className='dtab'+(d===aD?' on':'');t.id='dtab_'+d;t.textContent=(d+1)+'일차';
+    (function(dd){t.addEventListener('click',function(){sDtab(dd);});})(d);
+    gi('dtabs').appendChild(t);
+
+    // panel
+    var dv=sv.dates[d]||'';
+    var panel=document.createElement('div');
+    panel.className='dpanel'+(d===aD?' on':'');panel.id='dp_'+d;
+
+    // 날짜 + 합계
+    var topRow=document.createElement('div');topRow.className='fr';topRow.style.marginBottom='10px';
+    topRow.innerHTML=
+      '<div><span class="flabel">날짜</span><input type="date" id="di_'+d+'" class="finput" value="'+xss(dv)+'"></div>'+
+      '<div style="display:flex;flex-direction:column;justify-content:flex-end">'+
+        '<div class="totbar"><span class="tlbl">합계</span><span><span class="tval" id="tot_'+d+'">0</span> <span class="tunit">명</span></span></div>'+
+      '</div>';
+    panel.appendChild(topRow);
+
+    // 강의장별 블록
+    for(var h=0;h<HC;h++){
+      panel.appendChild(makeHallBlock(d,h,sv.cells[d][h]));
+    }
+
+    gi('dpanels').appendChild(panel);
+    (function(dd){var inp=gi('di_'+dd);if(inp)inp.addEventListener('change',function(){updTab(dd,this.value);});})(d);
+    if(dv)updTab(d,dv);
+    calcT(d);
+  }
+}
+
+/* 강의장 블록 생성 */
+function makeHallBlock(d,h,cellSv){
+  var block=document.createElement('div');
+  block.className='hall-block';
+  block.id='hblock_'+d+'_'+h;
+
+  var hdr=document.createElement('div');
+  hdr.className='hall-block-header';
+  hdr.innerHTML=
+    '<span class="cdot" style="background:'+HCOLS[h]+';width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0"></span>'+
+    '<span class="hall-block-name" id="hlbl_'+d+'_'+h+'">'+xss(getHallName(h))+'</span>'+
+    '<span class="hall-block-tot" id="htot_'+d+'_'+h+'">0명</span>';
+  block.appendChild(hdr);
+
+  var body=document.createElement('div');
+  body.className='hall-block-body';
+
+  // 1부 섹션
+  var s1sec=makeShiftSection(d,h,1,cellSv?cellSv.s1:{ka:[],pp:[]});
+  body.appendChild(s1sec);
+  // 2부 섹션
+  var s2sec=makeShiftSection(d,h,2,cellSv?cellSv.s2:{ka:[],pp:[]});
+  body.appendChild(s2sec);
+
+  block.appendChild(body);
+  return block;
+}
+
+/*
+  부별 섹션: [1부] 버튼(1과~5과) 클릭하면 인원 입력칸 나타남
+  레이아웃: 과번호 버튼들 한 줄 | 아래에 선택된 과의 인원 입력
+*/
+function makeShiftSection(d,h,shift,shiftSv){
+  var sec=document.createElement('div');
+  sec.className='shift-section';
+  sec.id='ssec_'+d+'_'+h+'_'+shift;
+
+  var lbl=document.createElement('div');
+  lbl.className='shift-label '+(shift===1?'s1':'s2');
+  lbl.textContent=shift+'부';
+  sec.appendChild(lbl);
+
+  // 과 버튼 + 인원 입력 컨테이너
+  var kaRow=document.createElement('div');
+  kaRow.className='ka-row';
+
+  var btns=document.createElement('div');
+  btns.className='ka-btns';
+
+  var inps=document.createElement('div');
+  inps.style.cssText='display:flex;flex-direction:column;gap:4px;';
+
+  var shiftClass=shift===1?'s1':'s2';
+
+  for(var k=1;k<=MAX_KA;k++){
+    // 과 버튼
+    var isOn=shiftSv&&shiftSv.ka&&shiftSv.ka[k-1]?true:false;
+    var prevPp=shiftSv&&shiftSv.pp?shiftSv.pp[k-1]:0;
+    var btnId='s'+shift+'ka_'+d+'_'+h+'_'+k;
+    var inpId='s'+shift+'pp_'+d+'_'+h+'_'+k;
+    var rowId='s'+shift+'row_'+d+'_'+h+'_'+k;
+
+    var btn=document.createElement('button');
+    btn.id=btnId;
+    btn.className='ka-btn'+(isOn?' on '+(shiftClass):'');
+    btn.textContent=k+'과';
+    btn.type='button';
+    btns.appendChild(btn);
+
+    // 인원 입력 행 (선택 시 표시) — createElement로 직접 구성해 참조 유지
+    var inpRow=document.createElement('div');
+    inpRow.id=rowId;
+    inpRow.style.cssText='display:'+(isOn?'flex':'none')+';align-items:center;gap:5px;';
+
+    var kaLbl=document.createElement('span');
+    kaLbl.style.cssText='font-size:11px;color:#9490c4;white-space:nowrap;min-width:28px';
+    kaLbl.textContent=k+'과';
+
+    var kaInp=document.createElement('input');
+    kaInp.type='number'; kaInp.min='0'; kaInp.id=inpId;
+    kaInp.className='finput ka-inp '+shiftClass+'b';
+    kaInp.value=(isOn&&prevPp)?prevPp:'';
+    kaInp.placeholder='인원(명)';
+
+    var kaUnit=document.createElement('span');
+    kaUnit.style.cssText='font-size:11px;color:#9490c4';
+    kaUnit.textContent='명';
+
+    inpRow.appendChild(kaLbl);
+    inpRow.appendChild(kaInp);
+    inpRow.appendChild(kaUnit);
+    inps.appendChild(inpRow);
+
+    // 버튼 클릭 → 토글 (btn, inpRow, kaInp 직접 참조)
+    (function(dd,hh,sf,myBtn,myRow,myInp){
+      myBtn.addEventListener('click',function(){
+        var on=this.classList.contains('on');
+        if(on){
+          this.classList.remove('on');this.classList.remove(sf===1?'s1':'s2');
+          myRow.style.display='none';
+          myInp.value='';
+        } else {
+          this.classList.add('on');this.classList.add(sf===1?'s1':'s2');
+          myRow.style.display='flex';
+          myInp.focus();
+        }
+        calcT(dd);calcHallTot(dd,hh);
+      });
+    })(d,h,shift,btn,inpRow,kaInp);
+
+    // 인원 입력 변경 — kaInp 직접 참조
+    (function(dd,hh,myInp){
+      myInp.addEventListener('input',function(){calcT(dd);calcHallTot(dd,hh);});
+    })(d,h,kaInp);
+  }
+
+  kaRow.appendChild(btns);
+  kaRow.appendChild(inps);
+  sec.appendChild(kaRow);
+  return sec;
+}
+
+function calcHallTot(d,h){
+  var tot=0;
+  for(var k=1;k<=MAX_KA;k++){
+    for(var sf=1;sf<=2;sf++){
+      var btn=gi('s'+sf+'ka_'+d+'_'+h+'_'+k);
+      if(btn&&btn.classList.contains('on')){
+        tot+=iv('s'+sf+'pp_'+d+'_'+h+'_'+k);
+      }
+    }
+  }
+  var el=gi('htot_'+d+'_'+h);
+  if(el)el.textContent=tot+'명';
+  return tot;
+}
+
+function calcT(d){
+  var s=0;
+  for(var h=0;h<HC;h++) s+=calcHallTot(d,h);
+  var el=gi('tot_'+d);if(el)el.textContent=s;
+}
+
+function rebuildDateHalls(){
+  for(var d=0;d<DC;d++){
+    var panel=gi('dp_'+d);if(!panel)continue;
+    // 기존 hall-block 제거
+    var old=panel.querySelectorAll('.hall-block');
+    for(var i=0;i<old.length;i++)old[i].parentNode.removeChild(old[i]);
+    // 새로 추가
+    for(var h=0;h<HC;h++) panel.appendChild(makeHallBlock(d,h,null));
+    calcT(d);
+  }
+}
+
+function sDtab(d){
+  aD=d;
+  document.querySelectorAll('.dtab').forEach(function(t,i){t.classList.toggle('on',i===d);});
+  document.querySelectorAll('.dpanel').forEach(function(p,i){p.classList.toggle('on',i===d);});
+}
+function updTab(d,v){
+  var t=gi('dtab_'+d);if(!t)return;
+  if(v){var dd=new Date(v+'T00:00:00');t.textContent=(dd.getMonth()+1)+'/'+(dd.getDate())+'('+WD[dd.getDay()]+')'; }
+  else t.textContent=(d+1)+'일차';
+}
+
+/* ──────────── 과별 담당자 ──────────── */
+function addStaff(dept,nm,rl){
+  var id='st'+(Date.now()+''+Math.random()).replace('.','');
+  var row=document.createElement('div');row.className='srow';row.id=id;
+  row.innerHTML=
+    '<input type="text" id="'+id+'d" class="finput" placeholder="부서" value="'+xss(dept)+'">'+
+    '<input type="text" id="'+id+'n" class="finput" placeholder="담당자" value="'+xss(nm)+'">'+
+    '<input type="text" id="'+id+'r" class="finput" placeholder="직책" value="'+xss(rl)+'">'+
+    '<button class="rmbtn" data-rid="'+id+'">&#10005;</button>';
+  gi('staffList').appendChild(row);
+  row.querySelector('.rmbtn').addEventListener('click',function(){
+    var el=gi(this.getAttribute('data-rid'));if(el)el.parentNode.removeChild(el);
+  });
+}
+function getStaff(){
+  var arr=[];
+  document.querySelectorAll('.srow').forEach(function(el){
+    var id=el.id;
+    var d=gi(id+'d'),n=gi(id+'n'),r=gi(id+'r');
+    if(n&&n.value.trim())arr.push({dept:(d?d.value.trim():''),name:n.value.trim(),role:(r?r.value.trim():'')});
+  });
+  return arr;
+}
+
+/* ──────────── 뷰 탭 ──────────── */
+function sVtab(v,el){cvtab=v;document.querySelectorAll('.vtab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');if(gHTML)showR();}
+function showR(){
+  var c=gi('rcont');
+  if(cvtab==='code'){var cb=document.createElement('div');cb.className='codebox';cb.textContent=gHTML;c.innerHTML='';c.appendChild(cb);}
+  else{c.innerHTML='<div class="prev-wrap"><iframe id="pf" style="width:100%;border:none;min-height:720px;display:block"></iframe></div>';gi('pf').srcdoc=gHTML;}
+}
+
+/* ──────────── 생성 ──────────── */
+function gen(){
+  var dept=gi('f_dept').value||'LNG 공사부';
+  var ndate=gi('f_ndate').value;
+  var title=gi('f_title').value||'교육';
+  var fst=gi('f_start').value,fen=gi('f_end').value;
+  var notice=gi('f_notice').value;
+  var staff=getStaff();
+
+  function pad(n){return n<10?'0'+n:n;}
+  function fmtD(ds){if(!ds)return'';var d=new Date(ds+'T00:00:00');return d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())+' ('+WD[d.getDay()]+')';}
+  function fmtKo(ds){if(!ds)return'';var d=new Date(ds+'T00:00:00');return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일';}
+
+  // 날짜별 데이터 수집
+  var dates=[];
+  for(var d=0;d<DC;d++){
+    var dv=gi('di_'+d)?gi('di_'+d).value:'';
+    var lbl='';
+    if(dv){var dd=new Date(dv+'T00:00:00');lbl=(dd.getMonth()+1)+'월 '+dd.getDate()+'일 ('+WD[dd.getDay()]+')';}
+    else lbl=(d+1)+'일차';
+
+    var totPersons=0;
+    var hallsData=[];
+
+    for(var h=0;h<HC;h++){
+      var hname=getHallName(h);
+      var s1kas=[],s2kas=[];
+      var s1tot=0,s2tot=0;
+
+      for(var k=1;k<=MAX_KA;k++){
+        var b1=gi('s1ka_'+d+'_'+h+'_'+k);
+        if(b1&&b1.classList.contains('on')){
+          var pp=iv('s1pp_'+d+'_'+h+'_'+k);
+          s1kas.push({ka:k,pp:pp});s1tot+=pp;
+        }
+        var b2=gi('s2ka_'+d+'_'+h+'_'+k);
+        if(b2&&b2.classList.contains('on')){
+          var pp2=iv('s2pp_'+d+'_'+h+'_'+k);
+          s2kas.push({ka:k,pp:pp2});s2tot+=pp2;
+        }
+      }
+      var htot=s1tot+s2tot;
+      totPersons+=htot;
+      hallsData.push({name:hname,s1kas:s1kas,s1tot:s1tot,s2kas:s2kas,s2tot:s2tot,tot:htot,col:HECS[h]});
+    }
+
+    dates.push({lbl:lbl,tot:totPersons,halls:hallsData});
+  }
+
+  var cw=Math.floor(560/DC);
+
+  /* 날짜 컬럼 */
+  var cols=dates.map(function(d){
+    /* 강의장별 상세 — table로 1부/2부 라벨-과배지 정렬 */
+    var hrows=d.halls.map(function(h){
+      if(!h.tot)return'';
+      var rows='';
+      if(h.s1kas.length){
+        var s1b=h.s1kas.map(function(x){return '<span style="background:'+h.col+'18;color:'+h.col+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin:1px">'+x.ka+'과 '+x.pp+'명</span>';}).join('');
+        rows+='<tr><td style="font-size:10px;color:#6b7280;font-weight:700;white-space:nowrap;padding:2px 6px 2px 0;vertical-align:middle;width:22px">1부</td><td style="padding:2px 0;vertical-align:middle">'+s1b+'</td></tr>';
+      }
+      if(h.s2kas.length){
+        var s2b=h.s2kas.map(function(x){return '<span style="background:'+h.col+'18;color:'+h.col+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin:1px">'+x.ka+'과 '+x.pp+'명</span>';}).join('');
+        rows+='<tr><td style="font-size:10px;color:#6b7280;font-weight:700;white-space:nowrap;padding:2px 6px 2px 0;vertical-align:middle;width:22px">2부</td><td style="padding:2px 0;vertical-align:middle">'+s2b+'</td></tr>';
+      }
+      return '<div style="margin-bottom:5px;padding:6px 8px;border-radius:6px;background:#f9fafb;border-left:3px solid '+h.col+'">'+
+        '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;font-weight:700">'+xss(h.name)+'</div>'+
+        '<table cellpadding="0" cellspacing="0" style="width:100%">'+rows+'</table></div>';
+    }).join('');
+
+    return '<td width="'+cw+'" valign="top" style="padding:4px">'+
+      '<table width="100%" cellpadding="0" cellspacing="0" style="border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;background:#fff">'+
+        '<tr><td style="background:#3730a3;padding:9px 10px;text-align:center">'+
+          '<div style="color:#c7d2fe;font-size:11px;font-weight:700">&#128197; '+xss(d.lbl)+'</div></td></tr>'+
+        '<tr><td style="padding:12px">'+
+          '<div style="text-align:center;padding:8px 0;border-bottom:1px solid #f3f4f6;margin-bottom:8px">'+
+            '<div style="font-size:10px;color:#9ca3af;font-weight:600;margin-bottom:2px">인원 합계</div>'+
+            '<div style="font-size:26px;font-weight:900;color:#ef4444;line-height:1">'+d.tot+'</div>'+
+            '<div style="font-size:11px;color:#9ca3af">명</div></div>'+
+          '<div><div style="font-size:10px;color:#9ca3af;font-weight:700;margin-bottom:5px">&#9679; 교육장</div>'+
+            (hrows||'<div style="font-size:11px;color:#d1d5db;text-align:center;padding:6px">인원 없음</div>')+'</div>'+
+        '</td></tr></table></td>';
+  }).join('');
+
+  /* 강의장 범례 */
+  var hlg=Array.from({length:HC},function(_,i){
+    return '<tr>'+
+      '<td style="padding:3px 8px 3px 0"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+HECS[i]+';vertical-align:middle"></span></td>'+
+      '<td style="font-size:12px;color:#374151;padding:3px 0">'+xss(getHallName(i))+'</td></tr>';
+  }).join('');
+
+  /* 과별 담당자 카드 */
+  var staffRows=staff.map(function(s){
+    return '<tr>'+
+      '<td style="padding:8px 12px;font-size:13px;font-weight:700;color:#374151;border-bottom:1px solid #f3f4f6;width:25%;text-align:center">'+xss(s.dept)+'</td>'+
+      '<td style="padding:8px 12px;font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6;width:35%;text-align:center">'+xss(s.name)+' '+xss(s.role)+'</td>'+
+      '</tr>';
+  }).join('');
+  var staffCard=staff.length===0?'':
+    '<tr><td style="background:#fff;padding:0 18px 14px">'+
+    '<div style="background:#f8f9ff;border-radius:10px;overflow:hidden;border:1px solid #e0e7ff">'+
+    '<div style="background:#3730a3;padding:10px 16px"><span style="color:#c7d2fe;font-size:11px;font-weight:700;letter-spacing:1px">&#128100; 과별 교육 담당자</span></div>'+
+    '<table width="100%" cellpadding="0" cellspacing="0">'+
+    '<tr style="background:#eef2ff;text-align:center">'+
+    '<td style="padding:7px 12px;font-size:10px;font-weight:700;color:#3730a3;letter-spacing:1px">부서</td>'+
+    '<td style="padding:7px 12px;font-size:10px;font-weight:700;color:#3730a3;letter-spacing:1px">담당자</td>'+
+    '</tr>'+
+    staffRows+'</table></div></td></tr>';
+
+  gHTML='<!DOCTYPE html>\n<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>날짜별 인원 교육장 통보</title></head>\n'+
+'<body style="margin:0;padding:20px 0;background:#f3f4f6;font-family:\'Malgun Gothic\',\'Apple SD Gothic Neo\',sans-serif">\n'+
+'<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">\n'+
+'<table width="620" cellpadding="0" cellspacing="0" style="max-width:620px">\n'+
+'<tr><td style="background:#3730a3;border-radius:12px 12px 0 0;padding:20px 24px">'+
+'<table width="100%" cellpadding="0" cellspacing="0"><tr>'+
+'<td valign="middle"><span style="font-size:22px">&#128226;</span>'+
+'<span style="font-size:19px;font-weight:900;color:#fff;margin-left:8px;vertical-align:middle">날짜별 인원 교육장 통보</span>'+
+'<div style="color:#a5b4fc;font-size:12px;margin-top:6px">'+xss(dept)+' &nbsp;|&nbsp; '+xss(fmtKo(fst))+' ~ '+xss(fmtKo(fen))+' '+xss(title)+'</div></td>'+
+'<td align="right" valign="top"><div style="color:#c7d2fe;font-size:10px;font-weight:700">&#128197; 통보일</div>'+
+'<div style="color:#fff;font-size:13px;font-weight:700;margin-top:3px">'+xss(fmtD(ndate))+'</div></td>'+
+'</tr></table></td></tr>\n'+
+'<tr><td style="background:#f9fafb;padding:12px 8px"><table width="100%" cellpadding="0" cellspacing="0"><tr>'+cols+'</tr></table></td></tr>\n'+
+staffCard+
+'<tr><td style="background:#fff;border-top:2px solid #e5e7eb;padding:14px 18px">'+
+'<table width="100%" cellpadding="0" cellspacing="0"><tr valign="top">'+
+'<td width="60%" style="padding-right:16px;border-right:1px solid #f3f4f6">'+
+'<div style="font-size:10px;font-weight:700;color:#3730a3;letter-spacing:1px;margin-bottom:7px">&#9432; 안내 사항</div>'+
+(notice?'<div style="font-size:12px;color:#6b7280;line-height:1.8">&bull; '+xss(notice)+'</div>':'')+
+'<div style="font-size:12px;color:#6b7280;line-height:1.8">&bull; 교육 관련 문의 : 교육담당자에게 연락 바랍니다.</div></td>'+
+'<td width="40%" style="padding-left:14px">'+
+'<div style="font-size:10px;font-weight:700;color:#3730a3;letter-spacing:1px;margin-bottom:7px">&#128205; 교육장 위치</div>'+
+'<table cellpadding="0" cellspacing="0">'+hlg+'</table></td>'+
+'</tr></table></td></tr>\n'+
+'<tr><td style="background:#1e1b4b;border-radius:0 0 12px 12px;padding:12px 18px">'+
+'<table width="100%" cellpadding="0" cellspacing="0"><tr>'+
+'<td style="color:#818cf8;font-size:12px">삼성중공업 | LNG공사부</td>'+
+'<td align="right" style="color:#4f46e5;font-size:11px">안전 &middot; 품질 &middot; 협력으로 미래를 만듭니다.</td>'+
+'</tr></table></td></tr>\n'+
+'</table></td></tr></table>\n</body></html>';
+
+  showR();toast('통보문이 생성되었습니다!');
+}
+
+function cpHTML(){
+  if(!gHTML){toast('먼저 통보문을 생성해주세요');return;}
+  try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(gHTML).then(function(){toast('HTML 복사 완료!');});}else{fbCopy();}}catch(e){fbCopy();}
+}
+function fbCopy(){
+  var ta=document.createElement('textarea');ta.value=gHTML;ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,999999);
+  try{document.execCommand('copy');toast('HTML 복사 완료!');}catch(e){toast('복사 실패 - HTML 코드 탭에서 복사하세요');}
+  document.body.removeChild(ta);
+}
+function dlHTML(){
+  if(!gHTML){toast('먼저 통보문을 생성해주세요');return;}
+  try{
+    var blob=new Blob([gHTML],{type:'text/html;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download='교육장_통보문.html';
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(a);},100);
+    toast('다운로드 시작!');
+  }catch(ex){
+    var a2=document.createElement('a');a2.href='data:text/html;charset=utf-8,'+encodeURIComponent(gHTML);
+    a2.download='교육장_통보문.html';document.body.appendChild(a2);a2.click();document.body.removeChild(a2);
+    toast('다운로드 시작!');
+  }
+}
+function toast(msg){var t=gi('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
+</script>
+</body>
+</html>
