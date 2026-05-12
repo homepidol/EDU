@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -89,13 +90,36 @@ input[type=number].finput{text-align:center;padding:8px 4px;}
 .vtab.on{color:#818cf8;border-bottom-color:#4f46e5;}
 .rcont{flex:1;overflow-y:auto;padding:18px;}
 .prev-wrap{background:#f3f4f6;border-radius:10px;overflow:hidden;}
-.codebox{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#a5b4fc;background:#252340;border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-all;line-height:1.7;}
+.codebox{font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#a5b4fc;background:#252340;border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-all;line-height:1.7;}
 .empty{text-align:center;padding:70px 30px;color:#5c5890;font-size:14px;line-height:2;}
 .emico{font-size:50px;margin-bottom:14px;}
 .toast{position:fixed;bottom:20px;right:20px;background:#059669;color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transform:translateY(10px);transition:all .3s;z-index:9999;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 @media(max-width:800px){.app{grid-template-columns:1fr;}.L{max-height:none;}.R{max-height:80vh;}}
+
+/* ── 관리탭 추가 스타일 ── */
+.mgmt-wrap{display:none;flex-direction:column;gap:12px;}
+.mgmt-wrap.on{display:flex;}
+.mgmt-empty{text-align:center;padding:50px 20px;color:#5c5890;font-size:13px;line-height:2;}
+.mgmt-card{background:#252340;border:1px solid #2f2c52;border-radius:10px;overflow:hidden;}
+.mgmt-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1e1b4b;border-bottom:1px solid #2f2c52;gap:8px;}
+.mgmt-card-title{font-size:13px;font-weight:700;color:#c7d2fe;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mgmt-card-date{font-size:11px;color:#9490c4;white-space:nowrap;}
+.mgmt-card-acts{display:flex;gap:6px;flex-shrink:0;}
+.mgmt-btn{padding:5px 11px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
+.mgmt-btn.view{background:#3730a3;color:#fff;}
+.mgmt-btn.view:hover{background:#4f46e5;}
+.mgmt-btn.dl{background:#1e3a5f;color:#93c5fd;}
+.mgmt-btn.dl:hover{background:#1d4ed8;color:#fff;}
+.mgmt-btn.del{background:#2d1515;color:#f87171;border:1px solid #7f1d1d;}
+.mgmt-btn.del:hover{background:#450a0a;}
+.mgmt-card-body{padding:10px 14px;font-size:12px;color:#9490c4;display:flex;gap:16px;flex-wrap:wrap;}
+.mgmt-tag{background:#2f2c52;border-radius:6px;padding:3px 9px;font-size:11px;color:#818cf8;}
+.save-btn-wrap{margin-top:6px;}
+.savebtn{width:100%;padding:11px;border-radius:10px;border:1px solid #059669;background:#064e3b;color:#34d399;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:block;}
+.savebtn:hover{background:#059669;color:#fff;}
 </style>
+
 </head>
 <body>
 <div class="app">
@@ -142,6 +166,7 @@ input[type=number].finput{text-align:center;padding:8px 4px;}
     <button class="addbtn" id="addStaffBtn">&#65291; 담당자 추가</button>
   </div>
   <button class="genbtn" id="genBtn">&#128276; 통보문 생성하기</button>
+  <div class="save-btn-wrap"><button class="savebtn" id="saveBtn">&#128190; 현재 통보문 저장</button></div>
 </div>
 
 <div class="R">
@@ -155,9 +180,13 @@ input[type=number].finput{text-align:center;padding:8px 4px;}
   <div class="vtabs">
     <button class="vtab on" id="vt_preview">미리보기</button>
     <button class="vtab" id="vt_code">HTML 코드</button>
+    <button class="vtab" id="vt_mgmt">&#128193; 관리</button>
   </div>
   <div class="rcont" id="rcont">
     <div class="empty"><div class="emico">&#128203;</div>왼쪽에서 정보를 입력 후<br><strong>통보문 생성하기</strong>를 클릭하세요.</div>
+  </div>
+  <div class="rcont" id="mgmtCont" style="display:none">
+    <div class="mgmt-wrap on" id="mgmtList"></div>
   </div>
 </div>
 </div>
@@ -167,7 +196,7 @@ input[type=number].finput{text-align:center;padding:8px 4px;}
 "use strict";
 var HCOLS=['#818cf8','#34d399','#fbbf24','#f87171','#c084fc'];
 var HECS =['#4338ca','#059669','#d97706','#dc2626','#7c3aed'];
-var HDEF =['LNG관 3층 교육장','외업 2관 3층 교육장','LNG 2층 A교육장','LNG 2층 C교육장','목업장 2층 교육장'];
+var HDEF =['LNG관 3층 교육장','외업 2관 3층 교육장','목업장 2층 교육장','별관 2층 교육장','본관 회의실'];
 var WD   =['일','월','화','수','목','금','토'];
 var MAX_KA=5; // 최대 과 수
 var HC=3,DC=4,aD=0,gHTML='',cvtab='preview';
@@ -179,7 +208,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var e=new Date(s);e.setDate(e.getDate()+4);gi('f_end').value=fd(e);
   renderH();renderD();
   addStaff('1과','서정민','프로');
-  addStaff('2과','김균호','프로');
+  addStaff('2과','김금호','프로');
   gi('hMinus').addEventListener('click',function(){chH(-1);});
   gi('hPlus').addEventListener('click',function(){chH(1);});
   gi('dMinus').addEventListener('click',function(){chD(-1);});
@@ -661,6 +690,131 @@ function dlHTML(){
   }
 }
 function toast(msg){var t=gi('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
+
+/* ══════════════ 관리탭 ══════════════ */
+var STORE_KEY='edu_notify_saves';
+
+function getSaves(){
+  try{return JSON.parse(localStorage.getItem(STORE_KEY)||'[]');}catch(e){return[];}
+}
+function setSaves(arr){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(arr));}catch(e){toast('저장 공간 부족!');}
+}
+
+/* 저장 */
+function saveRecord(){
+  if(!gHTML){toast('먼저 통보문을 생성해주세요');return;}
+  var title=gi('f_title').value||'교육';
+  var dept=gi('f_dept').value||'';
+  var fst=gi('f_start').value||'';
+  var fen=gi('f_end').value||'';
+  var ndate=gi('f_ndate').value||'';
+  var label=dept+' '+fst+(fen&&fst!==fen?' ~ '+fen:'') +' '+title;
+  var saves=getSaves();
+  var rec={
+    id:Date.now(),
+    label:label.trim(),
+    ndate:ndate,
+    savedAt:new Date().toLocaleString('ko-KR'),
+    html:gHTML
+  };
+  saves.unshift(rec); // 최신이 위
+  if(saves.length>30) saves=saves.slice(0,30); // 최대 30건
+  setSaves(saves);
+  renderMgmt();
+  toast('&#128190; 저장되었습니다!');
+}
+
+/* 관리탭 렌더 */
+function renderMgmt(){
+  var wrap=gi('mgmtList');
+  wrap.innerHTML='';
+  var saves=getSaves();
+  if(!saves.length){
+    wrap.innerHTML='<div class="mgmt-empty">&#128193;<br>저장된 통보문이 없습니다.<br>통보문 생성 후 <strong>현재 통보문 저장</strong>을 눌러주세요.</div>';
+    return;
+  }
+  saves.forEach(function(rec){
+    var card=document.createElement('div');
+    card.className='mgmt-card';
+    card.innerHTML=
+      '<div class="mgmt-card-hdr">'+
+        '<span class="mgmt-card-title">'+xss(rec.label)+'</span>'+
+        '<span class="mgmt-card-date">'+xss(rec.savedAt)+'</span>'+
+        '<div class="mgmt-card-acts">'+
+          '<button class="mgmt-btn view" data-id="'+rec.id+'">&#128065; 보기</button>'+
+          '<button class="mgmt-btn dl"   data-id="'+rec.id+'">&#8681; 다운로드</button>'+
+          '<button class="mgmt-btn del"  data-id="'+rec.id+'">&#10005;</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="mgmt-card-body">'+
+        '<span class="mgmt-tag">&#128197; '+xss(rec.ndate||'-')+'</span>'+
+        '<span class="mgmt-tag">'+xss(rec.label)+'</span>'+
+      '</div>';
+    // 보기
+    card.querySelector('.mgmt-btn.view').addEventListener('click',function(){
+      var id=parseInt(this.getAttribute('data-id'));
+      var s=getSaves().find(function(r){return r.id===id;});
+      if(!s)return;
+      gHTML=s.html;
+      // 미리보기 탭으로 전환
+      document.querySelectorAll('.vtab').forEach(function(t){t.classList.remove('on');});
+      gi('vt_preview').classList.add('on');
+      gi('rcont').style.display='';
+      gi('mgmtCont').style.display='none';
+      cvtab='preview';
+      showR();
+    });
+    // 다운로드
+    card.querySelector('.mgmt-btn.dl').addEventListener('click',function(){
+      var id=parseInt(this.getAttribute('data-id'));
+      var s=getSaves().find(function(r){return r.id===id;});
+      if(!s)return;
+      try{
+        var blob=new Blob([s.html],{type:'text/html;charset=utf-8'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');a.href=url;a.download='교육장_통보문_'+s.ndate+'.html';
+        document.body.appendChild(a);a.click();
+        setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(a);},100);
+      }catch(ex){
+        var a2=document.createElement('a');a2.href='data:text/html;charset=utf-8,'+encodeURIComponent(s.html);
+        a2.download='교육장_통보문_'+s.ndate+'.html';document.body.appendChild(a2);a2.click();document.body.removeChild(a2);
+      }
+      toast('다운로드 시작!');
+    });
+    // 삭제
+    card.querySelector('.mgmt-btn.del').addEventListener('click',function(){
+      if(!confirm('삭제하시겠습니까?'))return;
+      var id=parseInt(this.getAttribute('data-id'));
+      var saves=getSaves().filter(function(r){return r.id!==id;});
+      setSaves(saves);
+      renderMgmt();
+      toast('삭제되었습니다.');
+    });
+    wrap.appendChild(card);
+  });
+}
+
+/* 관리탭 뷰 전환 확장 */
+document.addEventListener('DOMContentLoaded',function(){
+  gi('saveBtn').addEventListener('click',saveRecord);
+  gi('vt_mgmt').addEventListener('click',function(){
+    document.querySelectorAll('.vtab').forEach(function(t){t.classList.remove('on');});
+    this.classList.add('on');
+    gi('rcont').style.display='none';
+    gi('mgmtCont').style.display='';
+    renderMgmt();
+  });
+  // 미리보기/코드 탭 클릭 시 관리탭 숨김 (기존 sVtab 보완)
+  ['vt_preview','vt_code'].forEach(function(id){
+    gi(id).addEventListener('click',function(){
+      gi('rcont').style.display='';
+      gi('mgmtCont').style.display='none';
+    });
+  });
+  // 초기 관리 목록 로드 (탭 전환 전엔 숨겨둠)
+});
 </script>
+
 </body>
 </html>
