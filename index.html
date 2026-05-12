@@ -129,8 +129,8 @@ input[type=number].finput{text-align:center;padding:8px 4px;}
   <div class="stitle">기본 정보</div>
   <div class="card">
     <div class="fr">
-      <div><span class="flabel">공사부서</span><input type="text" id="f_dept" class="finput" value="LNG 공사부"></div>
-      <div><span class="flabel">통보일</span><input type="date" id="f_ndate" class="finput"></div>
+      <div><span class="flabel">교육부서</span><input type="text" id="f_dept" class="finput" value="LNG 공사부"></div>
+      <div><span class="flabel">교육시작일</span><input type="date" id="f_ndate" class="finput"></div>
     </div>
     <div class="fr f1" style="margin-bottom:10px"><div><span class="flabel">교육 제목</span><input type="text" id="f_title" class="finput" value="자체교육 편성건"></div></div>
     <div class="fr">
@@ -196,7 +196,7 @@ input[type=number].finput{text-align:center;padding:8px 4px;}
 "use strict";
 var HCOLS=['#818cf8','#34d399','#fbbf24','#f87171','#c084fc'];
 var HECS =['#4338ca','#059669','#d97706','#dc2626','#7c3aed'];
-var HDEF =['LNG관 3층 교육장','외업 2관 3층 교육장','목업장 2층 교육장','별관 2층 교육장','본관 회의실'];
+var HDEF =['LNG관 3층 교육장','외업 2관 3층 교육장','목업장 2층 교육장','LNG 2층 A교육장','LNG 2층 C교육장'];
 var WD   =['일','월','화','수','목','금','토'];
 var MAX_KA=5; // 최대 과 수
 var HC=3,DC=4,aD=0,gHTML='',cvtab='preview';
@@ -207,8 +207,8 @@ document.addEventListener('DOMContentLoaded',function(){
   var s=new Date(today);s.setDate(s.getDate()+5);gi('f_start').value=fd(s);
   var e=new Date(s);e.setDate(e.getDate()+4);gi('f_end').value=fd(e);
   renderH();renderD();
-  addStaff('1과','서정민','프로');
-  addStaff('2과','김금호','프로');
+  addStaff('1부1과','서정민','프로');
+  addStaff('1부2과','김균호','프로');
   gi('hMinus').addEventListener('click',function(){chH(-1);});
   gi('hPlus').addEventListener('click',function(){chH(1);});
   gi('dMinus').addEventListener('click',function(){chD(-1);});
